@@ -2,20 +2,27 @@ sudo tee /usr/local/bin/openport > /dev/null << 'EOF'
 #!/bin/bash
 
 if [ "$#" -ne 1 ]; then
-  echo "usage: openport <port>"
+  echo "Usage: openport <port>"
   exit 1
 fi
 
 PORT="$1"
 
-sudo apt-get update -qq > /dev/null
-sudo apt-get install -y openssh-server > /dev/null
-sudo systemctl enable --now ssh > /dev/null
+sudo apt-get update -qq > /dev/null 2>&1
 
-sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config > /dev/null
-sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config > /dev/null
-sudo sed -i "s/^Port .*/Port $PORT/" /etc/ssh/sshd_config > /dev/null
-sudo systemctl restart ssh > /dev/null
+if ! dpkg -l | grep -q openssh-server; then
+  sudo apt-get install -y openssh-server > /dev/null 2>&1
+fi
+
+sudo systemctl enable --now ssh > /dev/null 2>&1
+
+sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config > /dev/null 2>&1
+sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config > /dev/null 2>&1
+
+if ! grep -q "^Port $PORT" /etc/ssh/sshd_config; then
+  sudo sed -i "s/^Port .*/Port $PORT/" /etc/ssh/sshd_config > /dev/null 2>&1
+  sudo systemctl restart ssh > /dev/null 2>&1
+fi
 
 IP=$(hostname -I | awk '{print $1}') || IP=$(ip a | grep -w 'inet' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1)
 
