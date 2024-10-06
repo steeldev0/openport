@@ -26,5 +26,5 @@ fi
 
 IP=$(hostname -I | awk '{print $1}')
 
-echo "ssh is on ${IP}:${PORT}, command is ssh root@${IP} -p ${PORT}"
+clear && echo "ssh is on ${IP}:${PORT}, command is ssh root@${IP} -p ${PORT}"
 EOF
