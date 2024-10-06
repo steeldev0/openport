@@ -1,0 +1,30 @@
+sudo tee /usr/local/bin/openport > /dev/null << 'EOF'
+#!/bin/sh
+
+if [ "$#" -ne 1 ]; then
+  echo "usage: openport <port>"
+  exit 1
+fi
+
+PORT="$1"
+
+if ! dpkg -l | grep -q openssh-server; then
+  sudo apt update
+  sudo apt install -y openssh-server
+fi
+
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+if ! grep -q "^Port $PORT" /etc/ssh/sshd_config; then
+  sudo sed -i "s/^Port .*/Port $PORT/" /etc/ssh/sshd_config
+  sudo systemctl restart ssh
+fi
+
+IP=$(hostname -I | awk '{print $1}')
+
+echo "ssh is on ${IP}:${PORT}, command is ssh root@${IP} -p ${PORT}"
+EOF
